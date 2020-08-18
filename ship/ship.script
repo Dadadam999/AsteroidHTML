@@ -1,0 +1,39 @@
+function init(self) -- функция инициализации объекта, срабатывает только один раз при его создании
+	msg.post(".", "acquire_input_focus") -- эта строчка нужна, чтобы скрипт корабля мог считывать нажатия клавиш
+	self.moving = false --свойство которое хранит состояние движения корабля. Если он стоит на месте - false, если перемещается - true
+	self.actions = vmath.vector3() -- свойство для хранения координатов курсора мыши
+	self.now_time = 0 -- свойство хранящее текущее время полета без столкновений
+	self.best_time = 0 -- свойство хранящее лучшее время полета без столкновений
+end
+
+function update(self, dt) -- функция срабатывает каждый фрэйм. Т.е. если ваша игра работает в 30 фпс, то эта функция сработает 30 раз в секунду 
+	if self.moving then -- если корабль перемещается то перемещаем корабль по координатам курсора
+		go.animate(".", "position", go.PLAYBACK_ONCE_FORWARD, self.actions, go.EASING_LINEAR, 0.5, 0) -- перемещаем корабль за курсором через переменную self.actions  
+	end
+
+	self.now_time = self.now_time + 1 --прибавление +1 к счетчику текущего времени 
+	label.set_text("#now_time", "second: " .. self.now_time) --вывод счетчика в label текущего времени
+
+	if self.best_time <= self.now_time then -- если текущее время больше, чем лучшее время, то обновляем и лучшее время тоже.
+		self.best_time = self.best_time + 1 --прибавление +1 к счетчику лучшего времени 
+		label.set_text("/other#best_time", "second: " .. self.best_time) --вывод счетчика в label лучшего времени
+	end
+end
+
+function on_message(self, message_id, message, sender)
+	if message_id == hash("trigger_response") then --отслеживаем столкновение корабля с другими объектами (а у нас кроме крабле только астероиды)
+		self.now_time = 0 -- если было стоклновение обнуляем текущее время
+		label.set_text("#now_time", "second: " .. self.now_time) --вывод счетчика в label текущего времени
+	end
+end
+
+function on_input(self, action_id, action)
+	self.actions = vmath.vector3(action.x, action.y, 0) -- получаем координаты курсора
+	if action_id == hash("touch") then -- отслеживаем нажатие левой кнопки мыши или касаения (если приложение запущено на смартфоне)
+		if action.pressed then -- отслеживаем зажата левая кнопка мыши или касание
+			self.moving = true -- меняем состояние корабля на перемещение
+		elseif action.released then -- отслеживаем отжата ли левая кнопка мыши или касание
+			self.moving = false -- меняем состояние корабля стоит на месте
+		end
+	end
+end
